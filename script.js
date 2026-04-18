@@ -268,11 +268,10 @@ window.calcPremiumTotal = function() {
   $('p-delivery-display').textContent = '₹' + delCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 });
   $('p-grand-total').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 };
-
 window.handlePremiumFormSubmit = async function(event) {
   event.preventDefault();
-  const btn = event.submitter || document.querySelector('#new-premium-order-form button[type="submit"]');
-  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...';
+  const btn = document.getElementById('place-order-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...'; }
 
   try {
     const restBlocks = document.querySelectorAll('.rest-block');
