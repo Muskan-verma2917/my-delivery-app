@@ -1,0 +1,16 @@
+{
+  "name": "Daily Delivery Sales",
+  "short_name": "DeliveryApp",
+  "description": "My daily delivery sales tracker application.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#e85d3a",
+  "icons": [
+    {
+      "src": "https://www.pwabuilder.com/assets/icons/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
