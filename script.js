@@ -1,36 +1,19 @@
 window.toggleModal = function(show) {
   const modal = document.getElementById('form-modal');
-  if (show) {
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  } else {
-    modal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-  }
+  if (show) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; } 
+  else { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; }
 };
-
 window.toggleEditModal = function(show) {
   const modal = document.getElementById('edit-modal');
-  if (show) {
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  } else {
-    modal.classList.add('hidden');
-    document.body.style.overflow = 'auto';
-  }
+  if (show) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; } 
+  else { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
   const modal = document.getElementById('form-modal');
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) toggleModal(false);
-  });
-
+  modal.addEventListener('click', function(e) { if (e.target === modal) toggleModal(false); });
   const editModal = document.getElementById('edit-modal');
-  editModal.addEventListener('click', function(e) {
-    if (e.target === editModal) toggleEditModal(false);
-  });
-
+  editModal.addEventListener('click', function(e) { if (e.target === editModal) toggleEditModal(false); });
   if(document.getElementById('edit-rate')) document.getElementById('edit-rate').addEventListener('input', updateEditTotal);
   if(document.getElementById('edit-qty')) document.getElementById('edit-qty').addEventListener('input', updateEditTotal);
   if(document.getElementById('edit-delivery')) document.getElementById('edit-delivery').addEventListener('input', updateEditTotal);
@@ -42,16 +25,6 @@ let currentFilter = 'All';
 let currentFilterDate = new Date().toISOString().slice(0, 10);
 let orderCounter = 0;
 let pendingDelete = null;
-
-const defaultConfig = {
-  app_title: 'Daily Delivery Sales',
-  currency_symbol: '₹',
-  background_color: '#0f1117',
-  surface_color: '#181a24',
-  text_color: '#f0ece4',
-  primary_action_color: '#e85d3a',
-  secondary_action_color: '#6b7084'
-};
 
 const $ = id => document.getElementById(id);
 const today = new Date();
@@ -66,11 +39,7 @@ function showToast(msg, type='success') {
   setTimeout(() => t.remove(), 3000);
 }
 
-function getCurrency() {
-  return (window.elementSdk && window.elementSdk.config && window.elementSdk.config.currency_symbol) || defaultConfig.currency_symbol;
-}
-
-// --- Local Storage Logic Shuru ---
+// --- LOCAL STORAGE LOGIC (DATA SAVE & LOAD) ---
 function saveToLocal() {
   localStorage.setItem('myDeliveryOrders', JSON.stringify(allOrders));
 }
@@ -85,11 +54,10 @@ function loadFromLocal() {
     });
   }
 }
-// --- Local Storage Logic Khatam ---
+// ----------------------------------------------
 
 window.filterByDate = function() {
-  const dateInput = $('date-filter');
-  currentFilterDate = dateInput.value;
+  currentFilterDate = $('date-filter').value;
   renderOrders();
   updateStats();
 };
@@ -97,10 +65,7 @@ window.filterByDate = function() {
 window.updateStats = function() {
   const filteredByDate = allOrders.filter(o => o.date && o.date.slice(0, 10) === currentFilterDate);
   let upiTotal = 0, cashTotal = 0, pendingTotal = 0, pureSales = 0, totalWithDelivery = 0;
-  let upiItemsTotal = 0, upiDeliveryTotal = 0;
-  let cashItemsTotal = 0, cashDeliveryTotal = 0;
-  let pendingItemsTotal = 0, pendingDeliveryTotal = 0;
-  let deliveredItemsTotal = 0, deliveredDeliveryTotal = 0, deliveredTotal = 0;
+  let upiItemsTotal = 0, upiDeliveryTotal = 0, cashItemsTotal = 0, cashDeliveryTotal = 0, pendingItemsTotal = 0, pendingDeliveryTotal = 0;
 
   filteredByDate.forEach(o => {
     if (o.status === 'Cancelled') return;
@@ -112,110 +77,63 @@ window.updateStats = function() {
     pureSales += itemTotal;
     totalWithDelivery += orderTotalWithDel;
 
-    if (o.status === 'Delivered') {
-      deliveredTotal += orderTotalWithDel;
-      deliveredItemsTotal += itemTotal;
-      deliveredDeliveryTotal += delCharge;
-    }
-
-    if (status === 'UPI Done') {
-      upiTotal += orderTotalWithDel;
-      upiItemsTotal += itemTotal;
-      upiDeliveryTotal += delCharge;
-    }
-    else if (status === 'Cash') {
-      cashTotal += orderTotalWithDel;
-      cashItemsTotal += itemTotal;
-      cashDeliveryTotal += delCharge;
-    }
-    else if (status === 'Payment Pending') {
-      pendingTotal += orderTotalWithDel;
-      pendingItemsTotal += itemTotal;
-      pendingDeliveryTotal += delCharge;
-    }
+    if (status === 'UPI Done') { upiTotal += orderTotalWithDel; upiItemsTotal += itemTotal; upiDeliveryTotal += delCharge; }
+    else if (status === 'Cash') { cashTotal += orderTotalWithDel; cashItemsTotal += itemTotal; cashDeliveryTotal += delCharge; }
+    else if (status === 'Payment Pending') { pendingTotal += orderTotalWithDel; pendingItemsTotal += itemTotal; pendingDeliveryTotal += delCharge; }
     else if (status.includes('Split')) {
-      const cashMatch = status.match(/Cash ₹([\d.]+)/);
-      const upiMatch = status.match(/UPI ₹([\d.]+)/);
-      
-      let splitCash = cashMatch ? parseFloat(cashMatch[1]) : 0;
-      let splitUpi = upiMatch ? parseFloat(upiMatch[1]) : 0;
-
-      cashTotal += splitCash;
-      upiTotal += splitUpi;
-
-      let cashDelCharge = Math.min(splitCash, delCharge);
-      let upiDelCharge = delCharge - cashDelCharge;
-
-      cashDeliveryTotal += cashDelCharge;
-      cashItemsTotal += (splitCash - cashDelCharge);
-      upiDeliveryTotal += upiDelCharge;
-      upiItemsTotal += (splitUpi - upiDelCharge);
+      const cashMatch = status.match(/Cash ₹([\d.]+)/); const upiMatch = status.match(/UPI ₹([\d.]+)/);
+      let splitCash = cashMatch ? parseFloat(cashMatch[1]) : 0; let splitUpi = upiMatch ? parseFloat(upiMatch[1]) : 0;
+      cashTotal += splitCash; upiTotal += splitUpi;
+      let cashDelCharge = Math.min(splitCash, delCharge); let upiDelCharge = delCharge - cashDelCharge;
+      cashDeliveryTotal += cashDelCharge; cashItemsTotal += (splitCash - cashDelCharge);
+      upiDeliveryTotal += upiDelCharge; upiItemsTotal += (splitUpi - upiDelCharge);
     }
   });
 
-  const upiBox = document.getElementById('breakdown-upi');
-  const cashBox = document.getElementById('breakdown-cash');
-  const pendingBox = document.getElementById('breakdown-pending');
-  
-  if (upiBox) upiBox.textContent = '₹' + upiTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (cashBox) cashBox.textContent = '₹' + cashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (pendingBox) pendingBox.textContent = '₹' + pendingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if ($('breakdown-upi')) $('breakdown-upi').textContent = '₹' + upiTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if ($('breakdown-cash')) $('breakdown-cash').textContent = '₹' + cashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if ($('breakdown-pending')) $('breakdown-pending').textContent = '₹' + pendingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-  if(document.getElementById('upi-items-total')) document.getElementById('upi-items-total').textContent = '₹' + upiItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('upi-delivery-total')) document.getElementById('upi-delivery-total').textContent = '₹' + upiDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('upi-grand-total')) document.getElementById('upi-grand-total').textContent = '₹' + upiTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('upi-items-total')) $('upi-items-total').textContent = '₹' + upiItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('upi-delivery-total')) $('upi-delivery-total').textContent = '₹' + upiDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('upi-grand-total')) $('upi-grand-total').textContent = '₹' + upiTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-  if(document.getElementById('cash-items-total')) document.getElementById('cash-items-total').textContent = '₹' + cashItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('cash-delivery-total')) document.getElementById('cash-delivery-total').textContent = '₹' + cashDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('cash-grand-total')) document.getElementById('cash-grand-total').textContent = '₹' + cashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('cash-items-total')) $('cash-items-total').textContent = '₹' + cashItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('cash-delivery-total')) $('cash-delivery-total').textContent = '₹' + cashDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('cash-grand-total')) $('cash-grand-total').textContent = '₹' + cashTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-  if(document.getElementById('pending-items-total')) document.getElementById('pending-items-total').textContent = '₹' + pendingItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('pending-delivery-total')) document.getElementById('pending-delivery-total').textContent = '₹' + pendingDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('pending-grand-total')) document.getElementById('pending-grand-total').textContent = '₹' + pendingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('pending-items-total')) $('pending-items-total').textContent = '₹' + pendingItemsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('pending-delivery-total')) $('pending-delivery-total').textContent = '₹' + pendingDeliveryTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('pending-grand-total')) $('pending-grand-total').textContent = '₹' + pendingTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-  const salesInrBox = document.getElementById('stat-sales-inr');
-  if (salesInrBox) salesInrBox.textContent = '₹' + pureSales.toFixed(2);
-
-  const salesDelBox = document.getElementById('stat-sales-delivery');
-  if (salesDelBox) salesDelBox.textContent = '₹' + totalWithDelivery.toFixed(2);
+  if ($('stat-sales-inr')) $('stat-sales-inr').textContent = '₹' + pureSales.toFixed(2);
+  if ($('stat-sales-delivery')) $('stat-sales-delivery').textContent = '₹' + totalWithDelivery.toFixed(2);
 
   const active = filteredByDate.filter(o => o.status !== 'Cancelled');
-  
   const deliveredOrders = filteredByDate.filter(o => o.status === 'Delivered');
-  const deliveredCount = deliveredOrders.length;
-  let deliveredSales = 0;
-  deliveredOrders.forEach(o => deliveredSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
+  let deliveredSales = 0; deliveredOrders.forEach(o => deliveredSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
 
   const pendingOrders = filteredByDate.filter(o => o.payment_status === 'Payment Pending');
-  const pendingCount = pendingOrders.length;
-  let pendingSales = 0;
-  pendingOrders.forEach(o => pendingSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
+  let pendingSales = 0; pendingOrders.forEach(o => pendingSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
 
   const upiOrders = filteredByDate.filter(o => o.payment_status === 'UPI Done');
-  const upiCount = upiOrders.length;
-  let upiSales = 0;
-  upiOrders.forEach(o => upiSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
+  let upiSales = 0; upiOrders.forEach(o => upiSales += (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0));
 
-let uniqueOrdersCount = new Set();
-  active.forEach(o => {
-    if (o.order_id) uniqueOrdersCount.add(o.order_id);
-  });
+  let uniqueOrdersCount = new Set();
+  active.forEach(o => { if (o.order_id) uniqueOrdersCount.add(o.order_id); });
 
-  if(document.getElementById('stat-total-orders')) {
-    document.getElementById('stat-total-orders').textContent = uniqueOrdersCount.size || active.length;
-  }
-
-  if(document.getElementById('stat-delivered')) document.getElementById('stat-delivered').textContent = deliveredCount;
-  if(document.getElementById('stat-delivered-total')) document.getElementById('stat-delivered-total').textContent = '₹' + deliveredSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('stat-payment-pending')) document.getElementById('stat-payment-pending').textContent = pendingCount;
-  if(document.getElementById('stat-payment-pending-total')) document.getElementById('stat-payment-pending-total').textContent = '₹' + pendingSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if(document.getElementById('stat-upi-done')) document.getElementById('stat-upi-done').textContent = upiCount;
-  if(document.getElementById('stat-upi-done-total')) document.getElementById('stat-upi-done-total').textContent = '₹' + upiSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('stat-total-orders')) $('stat-total-orders').textContent = uniqueOrdersCount.size || active.length;
+  if($('stat-delivered')) $('stat-delivered').textContent = deliveredOrders.length;
+  if($('stat-delivered-total')) $('stat-delivered-total').textContent = '₹' + deliveredSales.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('stat-payment-pending')) $('stat-payment-pending').textContent = pendingOrders.length;
+  if($('stat-payment-pending-total')) $('stat-payment-pending-total').textContent = '₹' + pendingSales.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('stat-upi-done')) $('stat-upi-done').textContent = upiOrders.length;
+  if($('stat-upi-done-total')) $('stat-upi-done-total').textContent = '₹' + upiSales.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   let riderData = {};
   let totalRiderSales = 0;
   const rateInput = document.getElementById('rider-rate-input');
-  const PER_ORDER_RATE = rateInput ? (parseFloat(rateInput.value) || 0) : 25;
+  const PER_ORDER_RATE = rateInput ? (parseFloat(rateInput.value) || 0) : 20;
 
   filteredByDate.forEach(o => {
     if (o.status === 'Cancelled') return;
@@ -226,10 +144,7 @@ let uniqueOrdersCount = new Set();
     let rName = rawRiderName.replace(/\(salary\)/i, '').trim(); 
     let orderTotal = (parseFloat(o.total) || 0) + (parseFloat(o.delivery_charge) || 0); 
 
-    if (!riderData[rName]) {
-        riderData[rName] = { amount: 0, addresses: new Set(), uniqueOrders: new Set(), isSalary: isSalary };
-    }
-    
+    if (!riderData[rName]) riderData[rName] = { amount: 0, addresses: new Set(), uniqueOrders: new Set(), isSalary: isSalary };
     riderData[rName].amount += orderTotal;
     if (o.order_id) riderData[rName].uniqueOrders.add(o.order_id);
     let addr = (o.address || o.customer_address || '').trim().toLowerCase();
@@ -237,19 +152,17 @@ let uniqueOrdersCount = new Set();
     totalRiderSales += orderTotal;
   });
 
-  const riderCount = Object.keys(riderData).length;
-  if(document.getElementById('stat-riders-count')) document.getElementById('stat-riders-count').textContent = riderCount;
-  if(document.getElementById('stat-riders-amount')) document.getElementById('stat-riders-amount').textContent = '₹' + totalRiderSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('stat-riders-count')) $('stat-riders-count').textContent = Object.keys(riderData).length;
+  if($('stat-riders-amount')) $('stat-riders-amount').textContent = '₹' + totalRiderSales.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   const riderBreakdownBox = document.getElementById('rider-breakdown-content');
   if (riderBreakdownBox) {
-      if (riderCount === 0) {
-          riderBreakdownBox.innerHTML = '<div class="text-slate-500 italic mt-1">No active riders yet</div>';
-      } else {
+      if (Object.keys(riderData).length === 0) { riderBreakdownBox.innerHTML = '<div class="text-slate-500 italic mt-1">No active riders yet</div>'; } 
+      else {
           let html = '';
           for (let r in riderData) {
               let d = riderData[r];
-              let payoutText = d.isSalary ? `<span class="text-xs font-semibold text-blue-400 mt-1">📊 On Salary</span>` : `<span class="text-xs font-bold text-green-400 mt-1">💰 Payout: ₹${d.addresses.size * PER_ORDER_RATE}</span>`;
+              let payoutText = d.isSalary ? `<span class="text-xs font-semibold text-blue-400 mt-1">📊 On Salary</span>` : `<span class="text-xs font-bold text-green-400 mt-1">💰 Payout: ₹${d.uniqueOrders.size * PER_ORDER_RATE}</span>`;
               html += `
               <div class="flex justify-between items-start gap-4 mb-3 border-b border-slate-700/50 pb-2 last:border-0 last:pb-0">
                   <div class="flex flex-col flex-1">
@@ -279,36 +192,28 @@ let uniqueOrdersCount = new Set();
     totalRestPureSales += itemTotal;
   });
 
-  const restCount = Object.keys(restData).length;
-  if(document.getElementById('stat-rest-count')) document.getElementById('stat-rest-count').textContent = restCount;
-  if(document.getElementById('stat-rest-amount')) document.getElementById('stat-rest-amount').textContent = '₹' + totalRestPureSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if($('stat-rest-count')) $('stat-rest-count').textContent = Object.keys(restData).length;
+  if($('stat-rest-amount')) $('stat-rest-amount').textContent = '₹' + totalRestPureSales.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   const restBreakdownBox = document.getElementById('rest-breakdown-content');
   if (restBreakdownBox) {
-      if (restCount === 0) {
-          restBreakdownBox.innerHTML = '<div class="text-slate-500 italic mt-1">No orders yet</div>';
-      } else {
+      if (Object.keys(restData).length === 0) { restBreakdownBox.innerHTML = '<div class="text-slate-500 italic mt-1">No orders yet</div>'; } 
+      else {
           let html = '';
-          for (let r in restData) {
-              html += `<div class="flex justify-between items-center gap-6 mb-2 border-b border-slate-700/50 pb-2 last:border-0 last:pb-0"><span class="font-medium text-slate-300 capitalize">${r}</span><span class="font-bold text-white">₹${restData[r].toFixed(2)}</span></div>`;
-          }
+          for (let r in restData) { html += `<div class="flex justify-between items-center gap-6 mb-2 border-b border-slate-700/50 pb-2 last:border-0 last:pb-0"><span class="font-medium text-slate-300 capitalize">${r}</span><span class="font-bold text-white">₹${restData[r].toFixed(2)}</span></div>`; }
           restBreakdownBox.innerHTML = html;
       }
   }
 };
 
 window.toggleSplitFields = function() {
-  const mode = document.getElementById('p-payment').value;
-  const splitDiv = document.getElementById('split-inputs');
-  if (mode === 'Split') splitDiv.classList.remove('hidden');
-  else splitDiv.classList.add('hidden');
+  const mode = $('p-payment').value;
+  if (mode === 'Split') $('split-inputs').classList.remove('hidden'); else $('split-inputs').classList.add('hidden');
 };
 
 window.toggleEditSplitFields = function() {
-  const mode = document.getElementById('edit-payment-status').value;
-  const splitDiv = document.getElementById('edit-split-inputs');
-  if (mode === 'Split') splitDiv.classList.remove('hidden');
-  else splitDiv.classList.add('hidden');
+  const mode = $('edit-payment-status').value;
+  if (mode === 'Split') $('edit-split-inputs').classList.remove('hidden'); else $('edit-split-inputs').classList.add('hidden');
 };
 
 window.addPremiumItem = function(restId) {
@@ -316,18 +221,15 @@ window.addPremiumItem = function(restId) {
   const div = document.createElement('div');
   div.className = 'item-row flex gap-2 items-start';
   div.innerHTML = `
-    <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="Item Name" required></div>
-    <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="0" min="0" oninput="calcPremiumTotal()" required></div>
-    <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="1" value="1" min="1" oninput="calcPremiumTotal()" required></div>
+    <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
+    <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
+    <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
     <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
   `;
   container.appendChild(div);
 };
 
-window.removePremiumItem = function(btn) {
-  btn.parentElement.remove();
-  calcPremiumTotal();
-};
+window.removePremiumItem = function(btn) { btn.parentElement.remove(); calcPremiumTotal(); };
 
 window.addPremiumRestaurant = function() {
   premRestCount++;
@@ -337,12 +239,12 @@ window.addPremiumRestaurant = function() {
   div.dataset.restId = premRestCount;
   div.innerHTML = `
     <button type="button" class="absolute top-3 right-3 text-slate-500 hover:text-red-500 text-xs font-bold uppercase tracking-wider" onclick="removePremiumRest(this)">Remove</button>
-    <div class="mb-4 pr-16"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="Enter restaurant name" required></div>
+    <div class="mb-4 pr-16"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
     <div class="items-container space-y-3 mb-3" id="items-rest-${premRestCount}">
       <div class="item-row flex gap-2 items-start">
-        <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="Item Name" required></div>
-        <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="0" min="0" oninput="calcPremiumTotal()" required></div>
-        <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="1" value="1" min="1" oninput="calcPremiumTotal()" required></div>
+        <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
+        <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
+        <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
         <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
       </div>
     </div>
@@ -351,10 +253,7 @@ window.addPremiumRestaurant = function() {
   wrapper.appendChild(div);
 };
 
-window.removePremiumRest = function(btn) {
-  btn.parentElement.remove();
-  calcPremiumTotal();
-};
+window.removePremiumRest = function(btn) { btn.parentElement.remove(); calcPremiumTotal(); };
 
 window.calcPremiumTotal = function() {
   let total = 0;
@@ -365,36 +264,27 @@ window.calcPremiumTotal = function() {
   });
   const delCharge = parseFloat(document.getElementById('p-del-charge').value) || 0;
   const grandTotal = total + delCharge;
-  
-  document.getElementById('p-subtotal').textContent = '₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  document.getElementById('p-delivery-display').textContent = '₹' + delCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  document.getElementById('p-grand-total').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $('p-subtotal').textContent = '₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  $('p-delivery-display').textContent = '₹' + delCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  $('p-grand-total').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 };
 
 window.handlePremiumFormSubmit = async function(event) {
   event.preventDefault();
   const btn = event.submitter || document.querySelector('#new-premium-order-form button[type="submit"]');
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
-  btn.textContent = 'Saving...';
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...';
 
   try {
     const restBlocks = document.querySelectorAll('.rest-block');
-    let allItems = [];
-    let itemsTotal = 0;
+    let allItems = []; let itemsTotal = 0;
 
     restBlocks.forEach(block => {
-      const restNameInput = block.querySelector('.rest-name');
-      const restName = restNameInput ? restNameInput.value.trim() : '';
+      const restName = block.querySelector('.rest-name')?.value.trim();
       if (restName) {
-        const itemRows = block.querySelectorAll('.item-row');
-        itemRows.forEach(row => {
-          const nameInput = row.querySelector('.item-name');
-          const rateInput = row.querySelector('.item-rate');
-          const qtyInput = row.querySelector('.item-qty');
-          const name = nameInput ? nameInput.value.trim() : '';
-          const rate = rateInput ? parseFloat(rateInput.value) || 0 : 0;
-          const qty = qtyInput ? parseFloat(qtyInput.value) || 1 : 1;
+        block.querySelectorAll('.item-row').forEach(row => {
+          const name = row.querySelector('.item-name')?.value.trim();
+          const rate = parseFloat(row.querySelector('.item-rate')?.value) || 0;
+          const qty = parseFloat(row.querySelector('.item-qty')?.value) || 1;
           if (name && rate > 0) {
             const total = rate * qty;
             itemsTotal += total;
@@ -404,45 +294,32 @@ window.handlePremiumFormSubmit = async function(event) {
       }
     });
 
-    if (allItems.length === 0) throw new Error("Please add at least one item with name and rate!");
+    if (allItems.length === 0) throw new Error("Please add at least one item!");
 
-    const paymentMode = document.getElementById('p-payment').value;
-    const contact = document.getElementById('p-contact').value.trim();
-    const address = document.getElementById('p-address').value.trim();
-    const rider = document.getElementById('p-rider').value.trim();
-    const deliveryCharge = parseFloat(document.getElementById('p-del-charge').value) || 0;
+    const paymentMode = $('p-payment').value; const contact = $('p-contact').value.trim();
+    const address = $('p-address').value.trim(); const rider = $('p-rider').value.trim();
+    const deliveryCharge = parseFloat($('p-del-charge').value) || 0;
 
     if (!paymentMode) throw new Error("Select a Payment Mode!");
     if (!address) throw new Error("Delivery Address is required!");
 
-    let splitCash = null;
-    let splitUpi = null;
     let finalPaymentMode = paymentMode;
-
     if (paymentMode === 'Split') {
-      splitCash = parseFloat(document.getElementById('split-cash').value) || 0;
-      splitUpi = parseFloat(document.getElementById('split-upi').value) || 0;
-      if (splitCash <= 0 && splitUpi <= 0) throw new Error("Enter at least one amount for Split payment!");
+      let splitCash = parseFloat($('split-cash').value) || 0; let splitUpi = parseFloat($('split-upi').value) || 0;
+      if (splitCash <= 0 && splitUpi <= 0) throw new Error("Enter amount for Split payment!");
       splitCash += deliveryCharge;
       finalPaymentMode = `Split: Cash ₹${splitCash.toFixed(2)} | UPI ₹${splitUpi.toFixed(2)}`;
     }
 
-    const dateInput = document.getElementById('date-filter');
+    const dateInput = $('date-filter');
     const orderDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
 
-    let successCount = 0;
-    let failedItems = [];
-    let isFirstItem = true;
-    
-    orderCounter++;
-    const currentOrderId = String(orderCounter).padStart(3, '0');
+    let successCount = 0; let isFirstItem = true;
+    orderCounter++; const currentOrderId = String(orderCounter).padStart(3, '0');
     
     for (const item of allItems) {
       let status = "Payment Pending";
-      if (paymentMode === "UPI Done" || paymentMode === "Cash" || paymentMode === "Split") {
-        status = "Delivered";
-      }
-      
+      if (["UPI Done", "Cash", "Split"].includes(paymentMode)) status = "Delivered";
       const appliedDeliveryCharge = isFirstItem ? deliveryCharge : 0;
       
       const newOrderData = {
@@ -464,59 +341,40 @@ window.handlePremiumFormSubmit = async function(event) {
         delivery_charge: appliedDeliveryCharge
       };
 
-      if(window.dataSdk && typeof window.dataSdk.create === 'function') {
-          const r = await window.dataSdk.create(newOrderData);
-          if (r.isOk) successCount++;
-          else failedItems.push(item.name);
-      } else {
-          // Saving to Local Storage
-          allOrders.push(newOrderData);
-          saveToLocal();
-          successCount++;
-      }
+      allOrders.push(newOrderData);
+      saveToLocal(); // Yahan data turant aapke browser me save ho jayega!
+      successCount++;
       isFirstItem = false;
     }
 
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.textContent = 'Place Order';
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order';
 
     if (successCount === allItems.length) {
-      showToast(`✅ Perfect! ${successCount} item${successCount !== 1 ? 's' : ''} saved successfully!`);
+      showToast(`✅ Perfect! saved successfully!`);
       document.getElementById('new-premium-order-form').reset();
-      document.getElementById('p-grand-total').textContent = '₹0';
-      document.getElementById('split-inputs').classList.add('hidden');
+      $('p-grand-total').textContent = '₹0';
+      $('split-inputs').classList.add('hidden');
       
-      const wrapper = document.getElementById('restaurants-wrapper');
-      wrapper.innerHTML = `
-        <div class="rest-block p-4 rounded-lg border border-slate-700 bg-[#16181f]" data-rest-id="1">
-          <div class="mb-4"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none transition-colors" placeholder="Enter restaurant name" required></div>
+      $('restaurants-wrapper').innerHTML = `<div class="rest-block p-4 rounded-lg border border-slate-700 bg-[#16181f]" data-rest-id="1">
+          <div class="mb-4"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
           <div class="items-container space-y-3 mb-3" id="items-rest-1">
             <div class="item-row flex gap-2 items-start">
-              <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="Item Name" required></div>
-              <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="0" min="0" oninput="calcPremiumTotal()" required></div>
-              <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" placeholder="1" value="1" min="1" oninput="calcPremiumTotal()" required></div>
+              <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
+              <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
+              <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
               <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
             </div>
           </div>
           <button type="button" onclick="addPremiumItem(1)" class="text-xs font-semibold tracking-wide hover:opacity-80 transition-opacity" style="color: #ff5a36;">+ Add Item</button>
-        </div>
-      `;
+        </div>`;
       premRestCount = 1;
       renderOrders();
       updateStats();
       setTimeout(() => toggleModal(false), 500);
-    } else if (successCount > 0) {
-      showToast(`⚠️ Saved ${successCount}/${allItems.length} items. Failed: ${failedItems.join(', ')}`);
-    } else {
-      throw new Error(`Failed to save any items. Please try again.`);
     }
   } catch (err) {
-    console.error(err);
-    showToast('❌ ' + err.message, 'error');
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.textContent = 'Place Order';
+    console.error(err); showToast('❌ ' + err.message, 'error');
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order';
   }
 };
 
@@ -532,13 +390,7 @@ function renderOrders() {
   });
 
   const empty = $('empty-state');
-  const c = getCurrency();
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
 
   const existingRows = new Map([...tbody.querySelectorAll('tr[data-id]')].map(r => [r.dataset.id, r]));
@@ -546,27 +398,19 @@ function renderOrders() {
 
   filtered.forEach(order => {
     let row = existingRows.get(order.__backendId);
-    if (row) {
-      updateRow(row, order, c);
-      existingRows.delete(order.__backendId);
-      fragment.appendChild(row);
-    } else {
-      row = createRow(order, c);
-      fragment.appendChild(row);
-    }
+    if (row) { updateRow(row, order); existingRows.delete(order.__backendId); fragment.appendChild(row); } 
+    else { row = createRow(order); fragment.appendChild(row); }
   });
-
   existingRows.forEach(r => r.remove());
-  tbody.innerHTML = '';
-  tbody.appendChild(fragment);
+  tbody.innerHTML = ''; tbody.appendChild(fragment);
 }
 
-function createRow(order, c) {
+function createRow(order) {
   const tr = document.createElement('tr');
   tr.dataset.id = order.__backendId;
   tr.className = 'row-enter';
   tr.style.cssText = 'border-top:1px solid #1e2030;';
-  updateRow(tr, order, c);
+  updateRow(tr, order);
   return tr;
 }
 
@@ -578,7 +422,7 @@ function getStatusColor(paymentStatus) {
   return '#6b7084';
 }
 
-function updateRow(tr, order, c) {
+function updateRow(tr, order) {
   const isConfirming = pendingDelete === order.__backendId;
   const statusColor = getStatusColor(order.payment_status);
 
@@ -596,9 +440,7 @@ function updateRow(tr, order, c) {
     <td class="px-4 py-3 text-xs" style="color:#9ca3af;">${esc(order.rider)}</td>
     <td class="px-4 py-3 text-right font-bold total-sale-amount" style="color:#10b981;">₹${(parseFloat(order.total) + parseFloat(order.delivery_charge || 0)).toFixed(2)}</td>
     <td class="px-4 py-3 text-center">
-      <select onchange="changeStatus('${order.__backendId}', this.value)"
-              class="bg-transparent border rounded px-2 py-1 outline-none text-xs font-semibold cursor-pointer"
-              style="border-color:${statusColor}; color:${statusColor};">
+      <select onchange="changeStatus('${order.__backendId}', this.value)" class="bg-transparent border rounded px-2 py-1 outline-none text-xs font-semibold cursor-pointer" style="border-color:${statusColor}; color:${statusColor};">
         <option value="Payment Pending" ${order.payment_status === 'Payment Pending' ? 'selected' : ''} style="color:#f59e0b; background:#181a24;">Payment Pending</option>
         <option value="Cash" ${order.payment_status === 'Cash' ? 'selected' : ''} style="color:#22c55e; background:#181a24;">Delivered</option>
         <option value="UPI Done" ${order.payment_status === 'UPI Done' ? 'selected' : ''} style="color:#3b82f6; background:#181a24;">UPI Done</option>
@@ -626,13 +468,9 @@ function updateRow(tr, order, c) {
   if(window.lucide) lucide.createIcons();
 }
 
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-async function changeStatusAndPayment(backendId, newPaymentStatus) {
+window.changeStatus = async function(backendId, newPaymentStatus) {
   const order = allOrders.find(o => o.__backendId === backendId);
   if (!order) return;
   order.payment_status = newPaymentStatus;
@@ -640,96 +478,52 @@ async function changeStatusAndPayment(backendId, newPaymentStatus) {
   else if (newPaymentStatus === 'Payment Pending') order.status = 'Payment Pending';
   else if (newPaymentStatus === 'Cash') order.status = 'Delivered';
   
-  if(window.dataSdk && typeof window.dataSdk.update === 'function') {
-      const r = await window.dataSdk.update(order);
-      if (r.isOk) {
-        showToast('Status updated');
-        updateStats();
-        renderOrders();
-      } else showToast('Failed to update', 'error');
-  } else {
-      saveToLocal();
-      showToast('Status updated locally');
-      updateStats();
-      renderOrders();
-  }
-}
-
-window.changeStatus = async function(backendId, newStatus) {
-  return changeStatusAndPayment(backendId, newStatus);
-}
-
-window.requestDelete = function(backendId) {
-  pendingDelete = backendId;
+  saveToLocal(); // Status change browser me save karega
+  showToast('✅ Status updated locally!');
+  updateStats();
   renderOrders();
-}
+};
 
-window.cancelDelete = function() {
-  pendingDelete = null;
-  renderOrders();
-}
-
+window.requestDelete = function(backendId) { pendingDelete = backendId; renderOrders(); };
+window.cancelDelete = function() { pendingDelete = null; renderOrders(); };
 window.confirmDelete = async function(backendId) {
-  const order = allOrders.find(o => o.__backendId === backendId);
-  if (!order) return;
+  allOrders = allOrders.filter(o => o.__backendId !== backendId);
   pendingDelete = null;
-  
-  if(window.dataSdk && typeof window.dataSdk.delete === 'function') {
-      const r = await window.dataSdk.delete(order);
-      if (r.isOk) showToast('Order deleted');
-      else showToast('Failed to delete', 'error');
-  } else {
-      allOrders = allOrders.filter(o => o.__backendId !== backendId);
-      saveToLocal();
-      showToast('Order deleted locally');
-      updateStats();
-      renderOrders();
-  }
-}
+  saveToLocal(); // Delete order browser me save karega
+  showToast('✅ Order deleted locally');
+  updateStats();
+  renderOrders();
+};
 
 window.openEditModal = function(backendId) {
   window.editingOrderId = backendId;
   const order = allOrders.find(o => o.__backendId === backendId);
   if (!order) return;
 
-  document.getElementById('edit-order-id').value = order.order_id || '';
-  document.getElementById('edit-restaurant').value = order.customer_name || '';
-  document.getElementById('edit-item-name').value = order.item_name || '';
-  document.getElementById('edit-rate').value = order.unit_price || '';
-  document.getElementById('edit-qty').value = order.quantity || '';
-  document.getElementById('edit-delivery').value = order.delivery_charge || '';
-  document.getElementById('edit-rider').value = order.rider || '';
-  document.getElementById('edit-contact').value = order.contact || '';
-  document.getElementById('edit-address').value = order.address || order.customer_address || '';
+  $('edit-order-id').value = order.order_id || ''; $('edit-restaurant').value = order.customer_name || '';
+  $('edit-item-name').value = order.item_name || ''; $('edit-rate').value = order.unit_price || '';
+  $('edit-qty').value = order.quantity || ''; $('edit-delivery').value = order.delivery_charge || '';
+  $('edit-rider').value = order.rider || ''; $('edit-contact').value = order.contact || '';
+  $('edit-address').value = order.address || order.customer_address || '';
   
   let pStatus = order.payment_status || '';
   if (pStatus.includes('Split')) {
-      document.getElementById('edit-payment-status').value = 'Split';
-      const cashMatch = pStatus.match(/Cash ₹([\d.]+)/);
-      const upiMatch = pStatus.match(/UPI ₹([\d.]+)/);
-      
-      let savedCash = cashMatch ? parseFloat(cashMatch[1]) : 0;
-      let savedUpi = upiMatch ? parseFloat(upiMatch[1]) : 0;
+      $('edit-payment-status').value = 'Split';
+      const cashMatch = pStatus.match(/Cash ₹([\d.]+)/); const upiMatch = pStatus.match(/UPI ₹([\d.]+)/);
+      let savedCash = cashMatch ? parseFloat(cashMatch[1]) : 0; let savedUpi = upiMatch ? parseFloat(upiMatch[1]) : 0;
       let delCharge = parseFloat(order.delivery_charge) || 0;
-
-      document.getElementById('edit-split-cash').value = Math.max(0, savedCash - delCharge);
-      document.getElementById('edit-split-upi').value = savedUpi;
-      document.getElementById('edit-split-inputs').classList.remove('hidden');
+      $('edit-split-cash').value = Math.max(0, savedCash - delCharge); $('edit-split-upi').value = savedUpi;
+      $('edit-split-inputs').classList.remove('hidden');
   } else {
-      document.getElementById('edit-payment-status').value = pStatus;
-      document.getElementById('edit-split-inputs').classList.add('hidden');
+      $('edit-payment-status').value = pStatus; $('edit-split-inputs').classList.add('hidden');
   }
-
-  updateEditTotal();
-  toggleEditModal(true);
+  updateEditTotal(); toggleEditModal(true);
 };
 
 window.updateEditTotal = function() {
-  const rate = parseFloat(document.getElementById('edit-rate').value) || 0;
-  const qty = parseFloat(document.getElementById('edit-qty').value) || 1;
-  const delivery = parseFloat(document.getElementById('edit-delivery').value) || 0;
-  const total = (rate * qty) + delivery;
-  document.getElementById('edit-total-display').textContent = '₹' + total.toFixed(2);
+  const rate = parseFloat($('edit-rate').value) || 0; const qty = parseFloat($('edit-qty').value) || 1;
+  const delivery = parseFloat($('edit-delivery').value) || 0;
+  $('edit-total-display').textContent = '₹' + ((rate * qty) + delivery).toFixed(2);
 };
 
 window.handleEditSubmit = async function(event) {
@@ -739,95 +533,41 @@ window.handleEditSubmit = async function(event) {
   if (!order) return;
 
   const btn = event.submitter || document.querySelector('#edit-order-form button[type="submit"]');
-  btn.disabled = true;
-  btn.style.opacity = '0.5';
-  btn.textContent = 'Saving...';
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...';
 
   try {
-    order.customer_name = document.getElementById('edit-restaurant').value.trim();
-    order.item_name = document.getElementById('edit-item-name').value.trim();
-    order.unit_price = parseFloat(document.getElementById('edit-rate').value) || 0;
-    order.quantity = parseFloat(document.getElementById('edit-qty').value) || 1;
-    order.total = order.unit_price * order.quantity;
-    order.delivery_charge = parseFloat(document.getElementById('edit-delivery').value) || 0;
-    order.rider = document.getElementById('edit-rider').value.trim();
-    order.contact = document.getElementById('edit-contact').value.trim();
-    order.address = document.getElementById('edit-address').value.trim();
-    order.customer_address = order.address;
-    order.location = order.address;
+    order.customer_name = $('edit-restaurant').value.trim(); order.item_name = $('edit-item-name').value.trim();
+    order.unit_price = parseFloat($('edit-rate').value) || 0; order.quantity = parseFloat($('edit-qty').value) || 1;
+    order.total = order.unit_price * order.quantity; order.delivery_charge = parseFloat($('edit-delivery').value) || 0;
+    order.rider = $('edit-rider').value.trim(); order.contact = $('edit-contact').value.trim();
+    order.address = $('edit-address').value.trim(); order.customer_address = order.address; order.location = order.address;
     
-    let editMode = document.getElementById('edit-payment-status').value;
+    let editMode = $('edit-payment-status').value;
     if (editMode === 'Split') {
-        let splitCash = parseFloat(document.getElementById('edit-split-cash').value) || 0;
-        let splitUpi = parseFloat(document.getElementById('edit-split-upi').value) || 0;
-        let delCharge = parseFloat(document.getElementById('edit-delivery').value) || 0;
-        splitCash += delCharge;
+        let splitCash = parseFloat($('edit-split-cash').value) || 0; let splitUpi = parseFloat($('edit-split-upi').value) || 0;
+        splitCash += parseFloat($('edit-delivery').value) || 0;
         order.payment_status = `Split: Cash ₹${splitCash.toFixed(2)} | UPI ₹${splitUpi.toFixed(2)}`;
-    } else {
-        order.payment_status = editMode;
-    }
+    } else order.payment_status = editMode;
 
-    if(window.dataSdk && typeof window.dataSdk.update === 'function') {
-        const r = await window.dataSdk.update(order);
-        if (r.isOk) {
-          showToast('✅ Order updated successfully!');
-          renderOrders();
-          updateStats();
-          toggleEditModal(false);
-        } else {
-          throw new Error(r.error?.message || 'Failed to update order');
-        }
-    } else {
-        saveToLocal();
-        showToast('✅ Order updated locally!');
-        renderOrders();
-        updateStats();
-        toggleEditModal(false);
-    }
-  } catch (err) {
-    console.error(err);
-    showToast('❌ ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    btn.textContent = 'Save Changes';
-  }
+    saveToLocal(); // Changes ko browser mein save karega
+    showToast('✅ Order updated locally!');
+    renderOrders();
+    updateStats();
+    toggleEditModal(false);
+  } catch (err) { showToast('❌ ' + err.message, 'error'); } 
+  finally { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Save Changes'; }
 };
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     currentFilter = btn.dataset.filter;
-    document.querySelectorAll('.filter-btn').forEach(b => {
-      b.style.background = '#2a2d3e';
-      b.style.color = '#6b7084';
-    });
-    btn.style.background = defaultConfig.primary_action_color;
-    btn.style.color = '#fff';
-    renderOrders();
+    document.querySelectorAll('.filter-btn').forEach(b => { b.style.background = '#2a2d3e'; b.style.color = '#6b7084'; });
+    btn.style.background = '#e85d3a'; btn.style.color = '#fff'; renderOrders();
   });
 });
 
-// Initialization Logic
-if(window.dataSdk && typeof window.dataSdk.init === 'function') {
-    (async () => {
-      const dataHandler = {
-        onDataChanged(data) {
-          allOrders = data;
-          data.forEach(o => {
-            const n = parseInt(o.order_id);
-            if (!isNaN(n) && n > orderCounter) orderCounter = n;
-          });
-          renderOrders();
-        }
-      };
-      const r = await window.dataSdk.init(dataHandler);
-      if (!r.isOk) showToast('Failed to connect to data store', 'error');
-    })();
-} else {
-    // Agar external database nahi hai toh Local Storage use karo
-    loadFromLocal();
-    renderOrders();
-    updateStats();
-}
-
+// App Shuru Hote Hi Data Load Karega
+loadFromLocal();
+renderOrders();
+updateStats();
 if(window.lucide) lucide.createIcons();
