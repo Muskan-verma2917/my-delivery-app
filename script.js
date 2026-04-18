@@ -17,6 +17,18 @@ document.addEventListener('DOMContentLoaded', function() {
   if(document.getElementById('edit-rate')) document.getElementById('edit-rate').addEventListener('input', updateEditTotal);
   if(document.getElementById('edit-qty')) document.getElementById('edit-qty').addEventListener('input', updateEditTotal);
   if(document.getElementById('edit-delivery')) document.getElementById('edit-delivery').addEventListener('input', updateEditTotal);
+
+  // AUTO-FIX: Mobile form silent blocking ko forcefully theek karne ka logic
+  const form = document.getElementById('new-premium-order-form');
+  if(form) {
+      form.setAttribute('novalidate', 'true');
+      form.onsubmit = function(e) { e.preventDefault(); };
+  }
+  const submitBtns = document.querySelectorAll('#new-premium-order-form button[type="submit"]');
+  submitBtns.forEach(btn => {
+      btn.type = "button";
+      btn.onclick = function(e) { handlePremiumFormSubmit(e); };
+  });
 });
 
 let premRestCount = 1;
@@ -39,11 +51,8 @@ function showToast(msg, type='success') {
   setTimeout(() => t.remove(), 3000);
 }
 
-// --- LOCAL STORAGE LOGIC (DATA SAVE & LOAD) ---
-function saveToLocal() {
-  localStorage.setItem('myDeliveryOrders', JSON.stringify(allOrders));
-}
-
+// LOCAL STORAGE LOGIC
+function saveToLocal() { localStorage.setItem('myDeliveryOrders', JSON.stringify(allOrders)); }
 function loadFromLocal() {
   const saved = localStorage.getItem('myDeliveryOrders');
   if(saved) {
@@ -54,7 +63,6 @@ function loadFromLocal() {
     });
   }
 }
-// ----------------------------------------------
 
 window.filterByDate = function() {
   currentFilterDate = $('date-filter').value;
@@ -163,18 +171,7 @@ window.updateStats = function() {
           for (let r in riderData) {
               let d = riderData[r];
               let payoutText = d.isSalary ? `<span class="text-xs font-semibold text-blue-400 mt-1">📊 On Salary</span>` : `<span class="text-xs font-bold text-green-400 mt-1">💰 Payout: ₹${d.uniqueOrders.size * PER_ORDER_RATE}</span>`;
-              html += `
-              <div class="flex justify-between items-start gap-4 mb-3 border-b border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                  <div class="flex flex-col flex-1">
-                    <span class="font-medium text-slate-300 capitalize">${r}</span>
-                    <span class="text-[10px] text-slate-500">${d.uniqueOrders.size} Orders | ${d.addresses.size} Addr</span>
-                    ${payoutText}
-                  </div>
-                  <div class="text-right">
-                    <span class="text-[10px] text-slate-500 block mb-0.5">Collected</span>
-                    <span class="font-bold text-white">₹${d.amount.toFixed(2)}</span>
-                  </div>
-              </div>`;
+              html += `<div class="flex justify-between items-start gap-4 mb-3 border-b border-slate-700/50 pb-2 last:border-0 last:pb-0"><div class="flex flex-col flex-1"><span class="font-medium text-slate-300 capitalize">${r}</span><span class="text-[10px] text-slate-500">${d.uniqueOrders.size} Orders | ${d.addresses.size} Addr</span>${payoutText}</div><div class="text-right"><span class="text-[10px] text-slate-500 block mb-0.5">Collected</span><span class="font-bold text-white">₹${d.amount.toFixed(2)}</span></div></div>`;
           }
           riderBreakdownBox.innerHTML = html;
       }
@@ -207,23 +204,24 @@ window.updateStats = function() {
 };
 
 window.toggleSplitFields = function() {
-  const mode = $('p-payment').value;
-  if (mode === 'Split') $('split-inputs').classList.remove('hidden'); else $('split-inputs').classList.add('hidden');
+  const mode = $('p-payment') ? $('p-payment').value : '';
+  if($('split-inputs')) { if (mode === 'Split') $('split-inputs').classList.remove('hidden'); else $('split-inputs').classList.add('hidden'); }
 };
 
 window.toggleEditSplitFields = function() {
-  const mode = $('edit-payment-status').value;
-  if (mode === 'Split') $('edit-split-inputs').classList.remove('hidden'); else $('edit-split-inputs').classList.add('hidden');
+  const mode = $('edit-payment-status') ? $('edit-payment-status').value : '';
+  if($('edit-split-inputs')) { if (mode === 'Split') $('edit-split-inputs').classList.remove('hidden'); else $('edit-split-inputs').classList.add('hidden'); }
 };
 
 window.addPremiumItem = function(restId) {
   const container = document.getElementById(`items-rest-${restId}`);
+  if(!container) return;
   const div = document.createElement('div');
   div.className = 'item-row flex gap-2 items-start';
   div.innerHTML = `
-    <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
-    <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
-    <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
+    <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none"></div>
+    <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()"></div>
+    <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()"></div>
     <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
   `;
   container.appendChild(div);
@@ -234,17 +232,18 @@ window.removePremiumItem = function(btn) { btn.parentElement.remove(); calcPremi
 window.addPremiumRestaurant = function() {
   premRestCount++;
   const wrapper = document.getElementById('restaurants-wrapper');
+  if(!wrapper) return;
   const div = document.createElement('div');
   div.className = 'rest-block p-4 rounded-lg border border-slate-700 bg-[#16181f] relative mt-4';
   div.dataset.restId = premRestCount;
   div.innerHTML = `
     <button type="button" class="absolute top-3 right-3 text-slate-500 hover:text-red-500 text-xs font-bold uppercase tracking-wider" onclick="removePremiumRest(this)">Remove</button>
-    <div class="mb-4 pr-16"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
+    <div class="mb-4 pr-16"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none"></div>
     <div class="items-container space-y-3 mb-3" id="items-rest-${premRestCount}">
       <div class="item-row flex gap-2 items-start">
-        <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
-        <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
-        <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
+        <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none"></div>
+        <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()"></div>
+        <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()"></div>
         <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
       </div>
     </div>
@@ -258,32 +257,42 @@ window.removePremiumRest = function(btn) { btn.parentElement.remove(); calcPremi
 window.calcPremiumTotal = function() {
   let total = 0;
   document.querySelectorAll('.item-row').forEach(row => {
-    const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
-    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const rate = parseFloat(row.querySelector('.item-rate') ? row.querySelector('.item-rate').value : 0) || 0;
+    const qty = parseFloat(row.querySelector('.item-qty') ? row.querySelector('.item-qty').value : 0) || 0;
     total += (rate * qty);
   });
-  const delCharge = parseFloat(document.getElementById('p-del-charge').value) || 0;
+  const delCharge = parseFloat($('p-del-charge') ? $('p-del-charge').value : 0) || 0;
   const grandTotal = total + delCharge;
-  $('p-subtotal').textContent = '₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-  $('p-delivery-display').textContent = '₹' + delCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-  $('p-grand-total').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('p-subtotal')) $('p-subtotal').textContent = '₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('p-delivery-display')) $('p-delivery-display').textContent = '₹' + delCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  if($('p-grand-total')) $('p-grand-total').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 };
+
 window.handlePremiumFormSubmit = async function(event) {
-  event.preventDefault();
-  const btn = document.getElementById('place-order-btn');
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...'; }
+  if(event) event.preventDefault();
+  let btn = event && event.currentTarget ? event.currentTarget : null;
+  if(!btn || btn.tagName !== 'BUTTON') {
+      const allBtns = document.querySelectorAll('#new-premium-order-form button');
+      btn = allBtns[allBtns.length - 1]; // Select last button (Place Order)
+  }
+
+  if(btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...'; }
 
   try {
     const restBlocks = document.querySelectorAll('.rest-block');
     let allItems = []; let itemsTotal = 0;
 
     restBlocks.forEach(block => {
-      const restName = block.querySelector('.rest-name')?.value.trim();
+      const restNameInput = block.querySelector('.rest-name');
+      const restName = restNameInput ? restNameInput.value.trim() : '';
       if (restName) {
         block.querySelectorAll('.item-row').forEach(row => {
-          const name = row.querySelector('.item-name')?.value.trim();
-          const rate = parseFloat(row.querySelector('.item-rate')?.value) || 0;
-          const qty = parseFloat(row.querySelector('.item-qty')?.value) || 1;
+          const nameInput = row.querySelector('.item-name');
+          const rateInput = row.querySelector('.item-rate');
+          const qtyInput = row.querySelector('.item-qty');
+          const name = nameInput ? nameInput.value.trim() : '';
+          const rate = rateInput ? (parseFloat(rateInput.value) || 0) : 0;
+          const qty = qtyInput ? (parseFloat(qtyInput.value) || 1) : 1;
           if (name && rate > 0) {
             const total = rate * qty;
             itemsTotal += total;
@@ -293,11 +302,13 @@ window.handlePremiumFormSubmit = async function(event) {
       }
     });
 
-    if (allItems.length === 0) throw new Error("Please add at least one item!");
+    if (allItems.length === 0) throw new Error("Please add at least one item with Rate!");
 
-    const paymentMode = $('p-payment').value; const contact = $('p-contact').value.trim();
-    const address = $('p-address').value.trim(); const rider = $('p-rider').value.trim();
-    const deliveryCharge = parseFloat($('p-del-charge').value) || 0;
+    const paymentMode = $('p-payment') ? $('p-payment').value : ''; 
+    const contact = $('p-contact') ? $('p-contact').value.trim() : '';
+    const address = $('p-address') ? $('p-address').value.trim() : ''; 
+    const rider = $('p-rider') ? $('p-rider').value.trim() : '';
+    const deliveryCharge = parseFloat($('p-del-charge') ? $('p-del-charge').value : 0) || 0;
 
     if (!paymentMode) throw new Error("Select a Payment Mode!");
     if (!address) throw new Error("Delivery Address is required!");
@@ -341,31 +352,36 @@ window.handlePremiumFormSubmit = async function(event) {
       };
 
       allOrders.push(newOrderData);
-      saveToLocal(); // Yahan data turant aapke browser me save ho jayega!
+      saveToLocal(); 
       successCount++;
       isFirstItem = false;
     }
 
-    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order';
+    if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order'; }
 
     if (successCount === allItems.length) {
       showToast(`✅ Perfect! saved successfully!`);
-      document.getElementById('new-premium-order-form').reset();
-      $('p-grand-total').textContent = '₹0';
-      $('split-inputs').classList.add('hidden');
+      const formElement = document.getElementById('new-premium-order-form');
+      if(formElement) formElement.reset();
       
-      $('restaurants-wrapper').innerHTML = `<div class="rest-block p-4 rounded-lg border border-slate-700 bg-[#16181f]" data-rest-id="1">
-          <div class="mb-4"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
-          <div class="items-container space-y-3 mb-3" id="items-rest-1">
-            <div class="item-row flex gap-2 items-start">
-              <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" required></div>
-              <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()" required></div>
-              <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()" required></div>
-              <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
+      if($('p-grand-total')) $('p-grand-total').textContent = '₹0';
+      if($('split-inputs')) $('split-inputs').classList.add('hidden');
+      
+      const wrapper = document.getElementById('restaurants-wrapper');
+      if(wrapper) {
+          wrapper.innerHTML = `<div class="rest-block p-4 rounded-lg border border-slate-700 bg-[#16181f]" data-rest-id="1">
+            <div class="mb-4"><label class="block text-xs font-medium text-slate-400 mb-1">Restaurant Name *</label><input type="text" name="rest_name[]" class="rest-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none"></div>
+            <div class="items-container space-y-3 mb-3" id="items-rest-1">
+              <div class="item-row flex gap-2 items-start">
+                <div class="flex-1"><label class="block text-[10px] text-slate-500 mb-1">Item Name</label><input type="text" name="item_name[]" class="item-name w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none"></div>
+                <div class="w-24"><label class="block text-[10px] text-slate-500 mb-1">Rate (₹)</label><input type="number" name="rate[]" class="item-rate w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" min="0" oninput="calcPremiumTotal()"></div>
+                <div class="w-20"><label class="block text-[10px] text-slate-500 mb-1">Qty</label><input type="number" name="qty[]" class="item-qty w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-[#ff5a36] outline-none" value="1" min="1" oninput="calcPremiumTotal()"></div>
+                <button type="button" class="mt-5 p-2 text-slate-500 hover:text-red-500 transition-colors" onclick="removePremiumItem(this)">✕</button>
+              </div>
             </div>
-          </div>
-          <button type="button" onclick="addPremiumItem(1)" class="text-xs font-semibold tracking-wide hover:opacity-80 transition-opacity" style="color: #ff5a36;">+ Add Item</button>
-        </div>`;
+            <button type="button" onclick="addPremiumItem(1)" class="text-xs font-semibold tracking-wide hover:opacity-80 transition-opacity" style="color: #ff5a36;">+ Add Item</button>
+          </div>`;
+      }
       premRestCount = 1;
       renderOrders();
       updateStats();
@@ -373,12 +389,13 @@ window.handlePremiumFormSubmit = async function(event) {
     }
   } catch (err) {
     console.error(err); showToast('❌ ' + err.message, 'error');
-    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order';
+    if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Place Order'; }
   }
 };
 
 function renderOrders() {
   const tbody = $('orders-body');
+  if(!tbody) return;
   const filteredByDate = allOrders.filter(o => o.date && o.date.slice(0, 10) === currentFilterDate);
   const filtered = filteredByDate.filter(o => {
     if (currentFilter === 'All') return true;
@@ -389,8 +406,8 @@ function renderOrders() {
   });
 
   const empty = $('empty-state');
-  if (filtered.length === 0) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
-  empty.classList.add('hidden');
+  if (filtered.length === 0) { tbody.innerHTML = ''; if(empty) empty.classList.remove('hidden'); return; }
+  if(empty) empty.classList.add('hidden');
 
   const existingRows = new Map([...tbody.querySelectorAll('tr[data-id]')].map(r => [r.dataset.id, r]));
   const fragment = document.createDocumentFragment();
@@ -477,7 +494,7 @@ window.changeStatus = async function(backendId, newPaymentStatus) {
   else if (newPaymentStatus === 'Payment Pending') order.status = 'Payment Pending';
   else if (newPaymentStatus === 'Cash') order.status = 'Delivered';
   
-  saveToLocal(); // Status change browser me save karega
+  saveToLocal();
   showToast('✅ Status updated locally!');
   updateStats();
   renderOrders();
@@ -488,7 +505,7 @@ window.cancelDelete = function() { pendingDelete = null; renderOrders(); };
 window.confirmDelete = async function(backendId) {
   allOrders = allOrders.filter(o => o.__backendId !== backendId);
   pendingDelete = null;
-  saveToLocal(); // Delete order browser me save karega
+  saveToLocal();
   showToast('✅ Order deleted locally');
   updateStats();
   renderOrders();
@@ -499,30 +516,37 @@ window.openEditModal = function(backendId) {
   const order = allOrders.find(o => o.__backendId === backendId);
   if (!order) return;
 
-  $('edit-order-id').value = order.order_id || ''; $('edit-restaurant').value = order.customer_name || '';
-  $('edit-item-name').value = order.item_name || ''; $('edit-rate').value = order.unit_price || '';
-  $('edit-qty').value = order.quantity || ''; $('edit-delivery').value = order.delivery_charge || '';
-  $('edit-rider').value = order.rider || ''; $('edit-contact').value = order.contact || '';
-  $('edit-address').value = order.address || order.customer_address || '';
+  if($('edit-order-id')) $('edit-order-id').value = order.order_id || ''; 
+  if($('edit-restaurant')) $('edit-restaurant').value = order.customer_name || '';
+  if($('edit-item-name')) $('edit-item-name').value = order.item_name || ''; 
+  if($('edit-rate')) $('edit-rate').value = order.unit_price || '';
+  if($('edit-qty')) $('edit-qty').value = order.quantity || ''; 
+  if($('edit-delivery')) $('edit-delivery').value = order.delivery_charge || '';
+  if($('edit-rider')) $('edit-rider').value = order.rider || ''; 
+  if($('edit-contact')) $('edit-contact').value = order.contact || '';
+  if($('edit-address')) $('edit-address').value = order.address || order.customer_address || '';
   
   let pStatus = order.payment_status || '';
   if (pStatus.includes('Split')) {
-      $('edit-payment-status').value = 'Split';
+      if($('edit-payment-status')) $('edit-payment-status').value = 'Split';
       const cashMatch = pStatus.match(/Cash ₹([\d.]+)/); const upiMatch = pStatus.match(/UPI ₹([\d.]+)/);
       let savedCash = cashMatch ? parseFloat(cashMatch[1]) : 0; let savedUpi = upiMatch ? parseFloat(upiMatch[1]) : 0;
       let delCharge = parseFloat(order.delivery_charge) || 0;
-      $('edit-split-cash').value = Math.max(0, savedCash - delCharge); $('edit-split-upi').value = savedUpi;
-      $('edit-split-inputs').classList.remove('hidden');
+      if($('edit-split-cash')) $('edit-split-cash').value = Math.max(0, savedCash - delCharge); 
+      if($('edit-split-upi')) $('edit-split-upi').value = savedUpi;
+      if($('edit-split-inputs')) $('edit-split-inputs').classList.remove('hidden');
   } else {
-      $('edit-payment-status').value = pStatus; $('edit-split-inputs').classList.add('hidden');
+      if($('edit-payment-status')) $('edit-payment-status').value = pStatus; 
+      if($('edit-split-inputs')) $('edit-split-inputs').classList.add('hidden');
   }
   updateEditTotal(); toggleEditModal(true);
 };
 
 window.updateEditTotal = function() {
-  const rate = parseFloat($('edit-rate').value) || 0; const qty = parseFloat($('edit-qty').value) || 1;
-  const delivery = parseFloat($('edit-delivery').value) || 0;
-  $('edit-total-display').textContent = '₹' + ((rate * qty) + delivery).toFixed(2);
+  const rate = parseFloat($('edit-rate') ? $('edit-rate').value : 0) || 0; 
+  const qty = parseFloat($('edit-qty') ? $('edit-qty').value : 0) || 1;
+  const delivery = parseFloat($('edit-delivery') ? $('edit-delivery').value : 0) || 0;
+  if($('edit-total-display')) $('edit-total-display').textContent = '₹' + ((rate * qty) + delivery).toFixed(2);
 };
 
 window.handleEditSubmit = async function(event) {
@@ -532,29 +556,35 @@ window.handleEditSubmit = async function(event) {
   if (!order) return;
 
   const btn = event.submitter || document.querySelector('#edit-order-form button[type="submit"]');
-  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...';
+  if(btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Saving...'; }
 
   try {
-    order.customer_name = $('edit-restaurant').value.trim(); order.item_name = $('edit-item-name').value.trim();
-    order.unit_price = parseFloat($('edit-rate').value) || 0; order.quantity = parseFloat($('edit-qty').value) || 1;
-    order.total = order.unit_price * order.quantity; order.delivery_charge = parseFloat($('edit-delivery').value) || 0;
-    order.rider = $('edit-rider').value.trim(); order.contact = $('edit-contact').value.trim();
-    order.address = $('edit-address').value.trim(); order.customer_address = order.address; order.location = order.address;
+    order.customer_name = $('edit-restaurant') ? $('edit-restaurant').value.trim() : ''; 
+    order.item_name = $('edit-item-name') ? $('edit-item-name').value.trim() : '';
+    order.unit_price = parseFloat($('edit-rate') ? $('edit-rate').value : 0) || 0; 
+    order.quantity = parseFloat($('edit-qty') ? $('edit-qty').value : 1) || 1;
+    order.total = order.unit_price * order.quantity; 
+    order.delivery_charge = parseFloat($('edit-delivery') ? $('edit-delivery').value : 0) || 0;
+    order.rider = $('edit-rider') ? $('edit-rider').value.trim() : ''; 
+    order.contact = $('edit-contact') ? $('edit-contact').value.trim() : '';
+    order.address = $('edit-address') ? $('edit-address').value.trim() : ''; 
+    order.customer_address = order.address; order.location = order.address;
     
-    let editMode = $('edit-payment-status').value;
+    let editMode = $('edit-payment-status') ? $('edit-payment-status').value : '';
     if (editMode === 'Split') {
-        let splitCash = parseFloat($('edit-split-cash').value) || 0; let splitUpi = parseFloat($('edit-split-upi').value) || 0;
-        splitCash += parseFloat($('edit-delivery').value) || 0;
+        let splitCash = parseFloat($('edit-split-cash') ? $('edit-split-cash').value : 0) || 0; 
+        let splitUpi = parseFloat($('edit-split-upi') ? $('edit-split-upi').value : 0) || 0;
+        splitCash += parseFloat($('edit-delivery') ? $('edit-delivery').value : 0) || 0;
         order.payment_status = `Split: Cash ₹${splitCash.toFixed(2)} | UPI ₹${splitUpi.toFixed(2)}`;
     } else order.payment_status = editMode;
 
-    saveToLocal(); // Changes ko browser mein save karega
+    saveToLocal();
     showToast('✅ Order updated locally!');
     renderOrders();
     updateStats();
     toggleEditModal(false);
   } catch (err) { showToast('❌ ' + err.message, 'error'); } 
-  finally { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Save Changes'; }
+  finally { if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Save Changes'; } }
 };
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
